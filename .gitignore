@@ -1,0 +1,4 @@
+venv
+.env
+flymd.*
+node_modules

@@ -1,0 +1,30 @@
+{
+  "name": "state-channel-contract",
+  "version": "1.0.0",
+  "description": "State channel contract to manage wireless internet access micro-payments",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx mocha --timeout 15000 --exit tests/*.test.js",
+    "lint": "npx eslint utils/*.js && npx eslint tests/*.js && solhint contracts/*.sol",
+    "deploy": "node utils/deploy.js",
+    "lintandtest": "npm run lint && npm run test"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chai": "^4.2.0",
+    "dotenv": "^8.1.0",
+    "ganache-cli": "^6.7.0",
+    "mocha": "^6.2.0",
+    "solc": "^0.5.11",
+    "web3": "^1.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.4.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1"
+  }
+}
