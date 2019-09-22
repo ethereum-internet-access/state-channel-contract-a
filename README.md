@@ -55,3 +55,17 @@ After that, deploy the smart contracts running:
 ```
 (venv) $ npm run lintandtest
 ```
+### Deploy, lint & test
+
+```
+(venv) $ npm run deploylintandtest
+```
+
+### Continuous integration
+
+This will run an `inotifywait` command watching contracts and tests source
+files triggering, deploy, lint and test script on any update.
+
+```
+(venv) $ npm run ci
+```
