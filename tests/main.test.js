@@ -36,11 +36,11 @@ describe('State channel contract tests', function () {
     const finalContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
     if (finalContractBalance !== previousContractBalance + BigInt(amount)) {
       // Due to https://github.com/chaijs/chai/issues/1195 ... chai cannot be used for this
-      throw new Error('Current contract balance does not match previous one minus fee')
+      throw new Error('Current contract balance does not match previous one plus amount')
     }
     if (finalUserBalance !== previousUserBalance - BigInt(amount) - gasPrice * cumulativeGasUsed) {
       // Due to https://github.com/chaijs/chai/issues/1195 ... chai cannot be used for this
-      throw new Error('Current user balance does not match previous one minus fee')
+      throw new Error('Current user balance does not match previous one minus amount and fee')
     }
     receipt.events.ChannelOpened.returnValues.should.have.property('payer')
     receipt.events.ChannelOpened.returnValues.should.have.property('channelId')
@@ -50,22 +50,35 @@ describe('State channel contract tests', function () {
     receipt.events.ChannelOpened.returnValues.depositAmount.should.equal(amount)
   })
 
-  it('Should allow a user to send micro-payments', async () => {
+  it('Should allow a user to generate a signature and owner close the channel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
     const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
-    const amount = '3000000000000000'
+    const amount = '2000000000000000'
     const hash = WEB3.utils.soliditySha3(
       { t: 'address', v: process.env.CONTRACT_ADDRESS },
       { t: 'uint256', v: amount },
       { t: 'uint256', v: CURRENT_CHANNEL_ID })
-    console.log('AQUI')
-    console.log(hash)
-    console.log(FIRST_USER_EPHEMERAL)
     const signature = await WEB3.eth.accounts.sign(hash, FIRST_USER_EPHEMERAL.privateKey)
-    console.log(signature.signature)
+    const previousUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
+    const previousContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
+    const previousOwnerBalance = BigInt(await WEB3.eth.getBalance(accounts[0]))
+    const gasPrice = BigInt(await WEB3.eth.getGasPrice())
     const receipt = await contract.methods.closeChannel(amount, CURRENT_CHANNEL_ID, signature.signature).send(
       { from: accounts[0], gas: '1000000' })
-    console.log(receipt)
+    receipt.events.ChannelClosed.returnValues.should.have.property('channelId')
+    const finalUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
+    const finalContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
+    const finalOwnerBalance = BigInt(await WEB3.eth.getBalance(accounts[0]))
+    const gasCost = BigInt(receipt.cumulativeGasUsed) * gasPrice
+    if (finalOwnerBalance !== previousOwnerBalance + BigInt(amount) - gasCost) {
+      throw new Error('Final owner balance does not match previous one plus signed amount')
+    }
+    if (finalUserBalance !== previousUserBalance + previousContractBalance - BigInt(amount)) {
+      throw new Error('Current user balance does not match previous one plus return')
+    }
+    if (finalContractBalance !== BigInt(0)) {
+      throw new Error('Contract balance is not null and it should be')
+    }
   })
 })

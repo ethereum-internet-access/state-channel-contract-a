@@ -56,9 +56,9 @@ contract StateChannel is Ownable {
     /// and the remainder will go back to the sender
     function closeChannel(uint256 amount, uint256 channelId, bytes memory signature) public {
         require(isOwner(), "Only contract owner can close the channel");
-        require(!channelMapping[channelId].closed);
-        require(channelMapping[channelId].deposit >= amount);
-        require(isValidSignature(amount, channelId, signature));
+        require(!channelMapping[channelId].closed, "Channel already closed");
+        require(channelMapping[channelId].deposit >= amount, "Not enough amount");
+        require(isValidSignature(amount, channelId, signature), "Invalid signature");
         uint256 _refundAmount = channelMapping[channelId].deposit.sub(amount);
         channelMapping[channelId].closed = true;
 
