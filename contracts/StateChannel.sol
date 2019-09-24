@@ -18,6 +18,7 @@ contract StateChannel is Ownable {
     }
 
     struct ChannelData {
+        address ephemeralAddress;
         address payable payer;
         uint256 deposit;
         uint256 openTime; // Timeout in case the recipient never closes.
@@ -35,14 +36,16 @@ contract StateChannel is Ownable {
 
     event ChannelExpired(address indexed payer, uint256 indexed channelId, uint256 refundedAmount);
 
-    function openChannel() public payable returns (uint256) {
+    function openChannel(address ephemeralAddress) public payable returns (uint256) {
         require(msg.value > 2000000000000000);
         // increment channel count and use it as a unique id
         uint256 channelId = channelCount + 1;
         channelCount = channelId;
         // init the channel with the creation data
         channelMapping[channelId] =
-            ChannelData({ payer : msg.sender, deposit : msg.value, openTime : now, closed : false });
+            ChannelData({ephemeralAddress: ephemeralAddress,
+                        payer : msg.sender,
+                        deposit : msg.value, openTime : now, closed : false });
         // log an event
         emit ChannelOpened(msg.sender, channelId, msg.value);
         return channelId;
@@ -85,7 +88,7 @@ contract StateChannel is Ownable {
         bytes32 message = prefixed(keccak256(abi.encodePacked(this, amount, channelId)));
 
         // check that the signature is from the payment sender
-        return recoverSigner(message, signature) == channelMapping[channelId].payer;
+        return recoverSigner(message, signature) == channelMapping[channelId].ephemeralAddress;
     }
 
     /// All functions below this are just taken from the chapter
