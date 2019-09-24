@@ -71,7 +71,7 @@ contract StateChannel is Ownable {
     /// then the Ether is released back to the sender.
     function claimTimeout(uint256 channelId) public payable {
         require(!channelMapping[channelId].closed);
-        uint256 _expirationTime = channelMapping[channelId].openTime.add(msg.value.div(pricePerSecond)).add(300);
+        uint256 _expirationTime = channelMapping[channelId].openTime.add(channelMapping[channelId].deposit.div(pricePerSecond)).add(300);
         require(now >= _expirationTime);
 
         channelMapping[channelId].closed = true;

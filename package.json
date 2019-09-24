@@ -4,7 +4,7 @@
   "description": "State channel contract to manage wireless internet access micro-payments",
   "main": "index.js",
   "scripts": {
-    "test": "npx mocha --timeout 15000 --exit tests/*.test.js",
+    "test": "npx mocha --timeout 100000 --exit tests/*.test.js",
     "lint": "npx eslint utils/*.js && npx eslint tests/*.js && solhint contracts/*.sol",
     "deploy": "node utils/deploy.js",
     "lintandtest": "npm run lint && npm run test",
