@@ -25,7 +25,7 @@ const deploy = async () => {
     defaultGasPrice: 0,
     transactionConfirmationBlocks: 1
   }
-  const web3 = new WEB3_API(`http://127.0.0.1:${process.env.GANACHE_PORT}`, null, options)
+  const web3 = new WEB3_API(`http://192.168.4.1:${process.env.GANACHE_PORT}`, null, options)
   const accounts = await web3.eth.getAccounts()
   const owner = accounts[0]
   const deployedContract = await new web3.eth.Contract(JSON.parse(ABI)).deploy({ data: BYTECODE }).send({ from: owner, gas: '5000000' })
