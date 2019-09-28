@@ -3,6 +3,10 @@
 *Solidity smart contract handling a one-directionl micro-payment
 state channel allowing wireless internet access service.*
 
+## Ropsten deployment
+
+[0x41b301c0b0abbfeef99803c23a281712e29b6ef1](https://ropsten.etherscan.io/address/0x41b301c0b0abbfeef99803c23a281712e29b6ef1)
+
 ## Recommended virtual environment and dependencies
 
 Using a local [nodeenv](https://github.com/ekalinin/nodeenv) in the repository root directory:
