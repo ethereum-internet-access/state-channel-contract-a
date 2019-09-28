@@ -23,11 +23,12 @@ const TIME_TRAVEL = (time) => {
 
 let CURRENT_CHANNEL_ID
 let FIRST_USER_EPHEMERAL
+let FIRST_USER_CHANEL_AMOUNT
 
 describe('State channel contract tests', function () {
   it('Smart contract symbol should equal StateChannel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
     const accounts = await WEB3.eth.getAccounts()
     accounts[0].should.be.a('string')
     const symbol = await contract.methods.name().call()
@@ -35,14 +36,30 @@ describe('State channel contract tests', function () {
     symbol.should.equal('StateChannel')
   })
 
+  it('Should not allow to open a channel with less than the minimal amount', async () => {
+    const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const accounts = await WEB3.eth.getAccounts()
+    const amount = '1999999999999999'
+    FIRST_USER_EPHEMERAL = WEB3.eth.accounts.create()
+    try {
+      await contract.methods.openChannel(FIRST_USER_EPHEMERAL.address).send(
+        { from: accounts[1], value: amount, gas: '1000000' })
+    } catch (err) {
+      console.log(err)
+      err.should.be.an('Error')
+    }
+  })
+
   it('Should allow a user to open a channel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
     const accounts = await WEB3.eth.getAccounts()
     const previousUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
     const previousContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
     const gasPrice = BigInt(await WEB3.eth.getGasPrice())
     const amount = '3000000000000000'
+    FIRST_USER_CHANEL_AMOUNT = BigInt(amount)
     FIRST_USER_EPHEMERAL = WEB3.eth.accounts.create()
     const receipt = await contract.methods.openChannel(FIRST_USER_EPHEMERAL.address).send(
       { from: accounts[1], value: amount, gas: '1000000' })
@@ -65,9 +82,29 @@ describe('State channel contract tests', function () {
     receipt.events.ChannelOpened.returnValues.depositAmount.should.equal(amount)
   })
 
+  it('Should not allow to close the channel with a fake signature', async () => {
+    const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const accounts = await WEB3.eth.getAccounts()
+    const amount = '2000000000000000'
+    const hash = WEB3.utils.soliditySha3(
+      { t: 'address', v: process.env.CONTRACT_ADDRESS },
+      { t: 'uint256', v: amount },
+      { t: 'uint256', v: CURRENT_CHANNEL_ID })
+    let FAKE_USER_EPHEMERAL = WEB3.eth.accounts.create()
+    const signature = await WEB3.eth.accounts.sign(hash, FAKE_USER_EPHEMERAL.privateKey)
+    try {
+      await contract.methods.closeChannel(amount, CURRENT_CHANNEL_ID, signature.signature).send(
+        { from: accounts[0], gas: '1000000' })
+    } catch (err) {
+      console.log(err)
+      err.should.be.an('Error')
+    }
+  })
+
   it('Should allow a user to generate a signature and owner close the channel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
     const accounts = await WEB3.eth.getAccounts()
     const amount = '2000000000000000'
     const hash = WEB3.utils.soliditySha3(
@@ -89,18 +126,37 @@ describe('State channel contract tests', function () {
     if (finalOwnerBalance !== previousOwnerBalance + BigInt(amount) - gasCost) {
       throw new Error('Final owner balance does not match previous one plus signed amount')
     }
-    // Next to assertions should be improved: they only work properly when just the fisrt channel has been opened after contract deployment
-    // if (finalUserBalance !== previousUserBalance + previousContractBalance - BigInt(amount)) {
-    //   throw new Error('Current user balance does not match previous one plus return')
-    // }
-    // if (finalContractBalance !== BigInt(0)) {
-    //   throw new Error('Contract balance is not null and it should be')
-    // }
+    if (finalUserBalance !== previousUserBalance + FIRST_USER_CHANEL_AMOUNT - BigInt(amount)) {
+      throw new Error('Current user balance does not match previous one plus return')
+    }
+    if (finalContractBalance !== previousContractBalance - FIRST_USER_CHANEL_AMOUNT) {
+      throw new Error('Contract balance does not match previous one less closed channel amount')
+    }
+  })
+
+  it('Should not allow a user to claim funds before expiration time', async () => {
+    const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const accounts = await WEB3.eth.getAccounts()
+    const amount = '3000000000000000'
+    FIRST_USER_CHANEL_AMOUNT = BigInt(amount)
+    FIRST_USER_EPHEMERAL = WEB3.eth.accounts.create()
+    const receiptOpen = await contract.methods.openChannel(FIRST_USER_EPHEMERAL.address).send(
+      { from: accounts[1], value: amount, gas: '1000000' })
+    CURRENT_CHANNEL_ID = receiptOpen.events.ChannelOpened.returnValues.channelId
+    await TIME_TRAVEL(60)
+    try {
+      await contract.methods.claimTimeout(CURRENT_CHANNEL_ID).send(
+        { from: accounts[1], value: 0, gas: '1000000' })
+    } catch (err) {
+      console.log(err)
+      err.should.be.an('Error')
+    }
   })
 
   it('Should allow a user to claim funds when channel remains open after expiration time', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
     const accounts = await WEB3.eth.getAccounts()
     const previousUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
     const previousContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
@@ -108,24 +164,18 @@ describe('State channel contract tests', function () {
     //   { from: accounts[1], value: 0, gas: '1000000' })
     // const expirationMargin = 301
     const gasPrice = BigInt(await WEB3.eth.getGasPrice())
-    const amount = '3000000000000000'
-    FIRST_USER_EPHEMERAL = WEB3.eth.accounts.create()
-    const receiptOpen = await contract.methods.openChannel(FIRST_USER_EPHEMERAL.address).send(
-      { from: accounts[1], value: amount, gas: '1000000' })
-    let cumulativeGasUsed = BigInt(receiptOpen.cumulativeGasUsed)
-    CURRENT_CHANNEL_ID = receiptOpen.events.ChannelOpened.returnValues.channelId
     // await TIME_TRAVEL(3000000000000000 / pricePerSecond + expirationMargin)
     await TIME_TRAVEL(3 * 3600 + 301)
     const receiptClaim = await contract.methods.claimTimeout(CURRENT_CHANNEL_ID).send(
       { from: accounts[1], value: 0, gas: '1000000' })
-    cumulativeGasUsed += BigInt(receiptClaim.cumulativeGasUsed)
+    let cumulativeGasUsed = BigInt(receiptClaim.cumulativeGasUsed)
     const finalUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
     const finalContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
-    if (finalContractBalance !== previousContractBalance) {
+    if (finalContractBalance !== previousContractBalance - FIRST_USER_CHANEL_AMOUNT) {
       // Due to https://github.com/chaijs/chai/issues/1195 ... chai cannot be used for this
       throw new Error('Current contract balance does not match previous one')
     }
-    if (finalUserBalance !== previousUserBalance - gasPrice * cumulativeGasUsed) {
+    if (finalUserBalance !== previousUserBalance - gasPrice * cumulativeGasUsed + FIRST_USER_CHANEL_AMOUNT) {
       // Due to https://github.com/chaijs/chai/issues/1195 ... chai cannot be used for this
       throw new Error('Current user balance does not match previous one minus fee')
     }
@@ -133,6 +183,5 @@ describe('State channel contract tests', function () {
     receiptClaim.events.ChannelExpired.returnValues.should.have.property('channelId')
     receiptClaim.events.ChannelExpired.returnValues.should.have.property('refundedAmount')
     receiptClaim.events.ChannelExpired.returnValues.payer.should.equal(accounts[1])
-    receiptClaim.events.ChannelExpired.returnValues.refundedAmount.should.equal(amount)
   })
 })

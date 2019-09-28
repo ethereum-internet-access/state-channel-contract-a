@@ -10,9 +10,11 @@ const SAFE_MATH_PATH = PATH.resolve(__dirname, process.env.CONTRACT_PATH, 'SafeM
 const SAFE_MATH_SRC = FS.readFileSync(SAFE_MATH_PATH, 'utf-8')
 const OWNABLE_PATH = PATH.resolve(__dirname, process.env.CONTRACT_PATH, 'Ownable.sol')
 const OWNABLE_SRC = FS.readFileSync(OWNABLE_PATH, 'utf-8')
+const ECDSA_PATH = PATH.resolve(__dirname, process.env.CONTRACT_PATH, 'ECDSA.sol')
+const ECDSA_SRC = FS.readFileSync(ECDSA_PATH, 'utf-8')
 
 const generateSource = () => {
-  const init = OWNABLE_SRC + '\n' + SC_SRC
+  const init = OWNABLE_SRC + '\n' + ECDSA_SRC + '\n' + SC_SRC
   let src = ''
   init.split('\n').forEach(
     (x) => {
