@@ -1,11 +1,10 @@
 {
-  "extends": "default",
   "rules": {
     "indent": ["error", 4],
     "quotes": ["error", "double"],
     "max-line-length": ["error", 120],
-    "not-rely-on-time": false,
-    "no-inline-assembly": false,
-    "indent": false
+    "not-rely-on-time": "off",
+    "no-inline-assembly": "off",
+    "indent": "off"
   }
 }

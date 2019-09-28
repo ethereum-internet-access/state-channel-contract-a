@@ -28,7 +28,7 @@ let FIRST_USER_CHANEL_AMOUNT
 describe('State channel contract tests', function () {
   it('Smart contract symbol should equal StateChannel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     accounts[0].should.be.a('string')
     const symbol = await contract.methods.name().call()
@@ -38,7 +38,7 @@ describe('State channel contract tests', function () {
 
   it('Should not allow to open a channel with less than the minimal amount', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     const amount = '1999999999999999'
     FIRST_USER_EPHEMERAL = WEB3.eth.accounts.create()
@@ -53,7 +53,7 @@ describe('State channel contract tests', function () {
 
   it('Should allow a user to open a channel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     const previousUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
     const previousContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
@@ -84,14 +84,14 @@ describe('State channel contract tests', function () {
 
   it('Should not allow to close the channel with a fake signature', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     const amount = '2000000000000000'
     const hash = WEB3.utils.soliditySha3(
       { t: 'address', v: process.env.CONTRACT_ADDRESS },
       { t: 'uint256', v: amount },
       { t: 'uint256', v: CURRENT_CHANNEL_ID })
-    let FAKE_USER_EPHEMERAL = WEB3.eth.accounts.create()
+    const FAKE_USER_EPHEMERAL = WEB3.eth.accounts.create()
     const signature = await WEB3.eth.accounts.sign(hash, FAKE_USER_EPHEMERAL.privateKey)
     try {
       await contract.methods.closeChannel(amount, CURRENT_CHANNEL_ID, signature.signature).send(
@@ -104,7 +104,7 @@ describe('State channel contract tests', function () {
 
   it('Should allow a user to generate a signature and owner close the channel', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     const amount = '2000000000000000'
     const hash = WEB3.utils.soliditySha3(
@@ -136,7 +136,7 @@ describe('State channel contract tests', function () {
 
   it('Should not allow a user to claim funds before expiration time', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     const amount = '3000000000000000'
     FIRST_USER_CHANEL_AMOUNT = BigInt(amount)
@@ -156,7 +156,7 @@ describe('State channel contract tests', function () {
 
   it('Should allow a user to claim funds when channel remains open after expiration time', async () => {
     const abi = JSON.parse(FS.readFileSync('./contracts/abi.json', 'utf-8'))
-    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)    
+    const contract = new WEB3.eth.Contract(abi, process.env.CONTRACT_ADDRESS)
     const accounts = await WEB3.eth.getAccounts()
     const previousUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
     const previousContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
@@ -168,7 +168,7 @@ describe('State channel contract tests', function () {
     await TIME_TRAVEL(3 * 3600 + 301)
     const receiptClaim = await contract.methods.claimTimeout(CURRENT_CHANNEL_ID).send(
       { from: accounts[1], value: 0, gas: '1000000' })
-    let cumulativeGasUsed = BigInt(receiptClaim.cumulativeGasUsed)
+    const cumulativeGasUsed = BigInt(receiptClaim.cumulativeGasUsed)
     const finalUserBalance = BigInt(await WEB3.eth.getBalance(accounts[1]))
     const finalContractBalance = BigInt(await WEB3.eth.getBalance(process.env.CONTRACT_ADDRESS))
     if (finalContractBalance !== previousContractBalance - FIRST_USER_CHANEL_AMOUNT) {
