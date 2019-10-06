@@ -4,8 +4,8 @@
   "description": "State channel contract to manage wireless internet access micro-payments",
   "main": "index.js",
   "scripts": {
-    "test": "npx mocha --timeout 15000 --exit tests/*.test.js",
-    "lint": "npx eslint utils/*.js && npx eslint tests/*.js && solhint contracts/*.sol",
+    "test": "npx mocha --timeout 100000 --exit tests/*.test.js",
+    "lint": "npx eslint utils/*.js && npx eslint tests/*.js && npx solhint contracts/*.sol",
     "deploy": "node utils/deploy.js",
     "lintandtest": "npm run lint && npm run test",
     "deploylintandtest": "npm run deploy && npm run lint && npm run test",
@@ -19,6 +19,7 @@
     "ganache-cli": "^6.7.0",
     "mocha": "^6.2.0",
     "solc": "^0.5.11",
+    "solhint": "^2.3.0",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "^1.2.1"
   },
